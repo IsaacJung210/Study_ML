@@ -1,0 +1,240 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 184,
+   "id": "187f4c23-1594-407f-b8ee-837d60e081cb",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import warnings\n",
+    "warnings.filterwarnings(action='ignore')\n",
+    "import numpy as np\n",
+    "import pandas as pd\n",
+    "import matplotlib.pyplot as plt\n",
+    "\n",
+    "from sklearn.model_selection import cross_val_score\n",
+    "from sklearn.linear_model import LogisticRegression\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 199,
+   "id": "b4beeeed-d1f3-45ec-a285-b91f7991c0a4",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df = pd.read_csv(\"data/titanic.csv\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 200,
+   "id": "c5ed8d63-d04b-4cca-9fd7-cab693a87b46",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df.head()\n",
+    "# df.columns\n",
+    "# df.shape\n",
+    "#df.Ticket.value_counts()\n",
+    "data = df[[\"Pclass\",\"Sex\",\"SibSp\",\"Parch\",\"Fare\",\"Cabin\",\"Embarked\",\"Age\",\"Survived\"]]\n",
+    "feature_cols = [\"Pclass\",\"Sex\",\"SibSp\",\"Parch\",\"Fare\",\"Cabin\",\"Embarked\",\"Age\"]\n",
+    "target_col =[\"Survived\"]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 201,
+   "id": "a8618c22-df37-4cb1-9fad-25bc4f0d0156",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "data.head()\n",
+    "#data.Embarked.unique()\n",
+    "#data.dtypes\n",
+    "data.isna().sum() # null, na, Nan, None\n",
+    "## Embarked 는 row 를 제거\n",
+    "data = data.loc[~data.Embarked.isna(),:]\n",
+    "## Cabin은 column을 제거\n",
+    "#data.loc[:,[\"Pclass\",\"Sex\",\"SibSp\",\"Parch\",\"Fare\",\"Cabin\",\"Age\"]]\n",
+    "data.drop(\"Cabin\",axis=1,inplace=True)\n",
+    "## Age는 데이터를 imputation\n",
+    "#data.loc[data.Age.isna(),\"Age\"] = data.Age.mean()\n",
+    "#data.Age.fillna(data.Age.mean(),inplace=True)\n",
+    "# 산사람들의 평균을 산사람의 나이에 넣고\n",
+    "new_data = df.groupby([\"Survived\",\"Sex\"]).mean().Age.reset_index()\n",
+    "# 죽은 사람들의 평균을 죽은사람의 나이에\n",
+    "#df.loc[df.Age.isna(),:]\n",
+    "data.loc[(data.Survived==0) & (data.Sex=='female') & (data.Age.isna()),\"Age\"] = new_data.loc[(new_data.Survived==0) & (new_data.Sex=='female'),\"Age\"].values[0]\n",
+    "data.loc[(data.Survived==1) & (data.Sex=='female') & (data.Age.isna()),\"Age\"] = new_data.loc[(new_data.Survived==1) & (new_data.Sex=='female'),\"Age\"].values[0]\n",
+    "data.loc[(data.Survived==0) & (data.Sex=='male') & (data.Age.isna()),\"Age\"] = new_data.loc[(new_data.Survived==0) & (new_data.Sex=='male'),\"Age\"].values[0]\n",
+    "data.loc[(data.Survived==1) & (data.Sex=='male') & (data.Age.isna()),\"Age\"] = new_data.loc[(new_data.Survived==1) & (new_data.Sex=='male'),\"Age\"].values[0]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 222,
+   "id": "711ba741-ef93-4dde-9b45-7628975ec9cb",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "for i in :\n",
+    "    np.zeros((889,3))[i,2] = 1"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 204,
+   "id": "bc214416-f977-4d1a-9259-f4ce8fdd3ed3",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "X = data.iloc[:,:-1]\n",
+    "y = data.iloc[:,-1]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 205,
+   "id": "0c17fb1a-6873-4149-b981-29c78bc34e73",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "newEmbarked = np.where(X.Embarked == X.Embarked.unique()[0],0,\n",
+    "                       np.where(X.Embarked==X.Embarked.unique()[1],1,2))\n",
+    "newSex = np.where(X.Sex == X.Sex.unique()[0],0,1)\n",
+    "\n",
+    "# newEmbarked = []\n",
+    "# for embarkeds in X.Embarked:\n",
+    "#     if embarkeds == X.Embarked.unique()[0]:\n",
+    "#         newEmbarked.append(0)\n",
+    "#     elif embarkeds == X.Embarked.unique()[1]:\n",
+    "#         newEmbarked.append(1)\n",
+    "#     else:\n",
+    "#         newEmbarked.append(2)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 206,
+   "id": "4958e317-1b8c-4375-86cd-b6854552c8aa",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "X.drop([\"Sex\",\"Embarked\"],axis=1,inplace=True)\n",
+    "X[\"Sex\"] = newSex\n",
+    "X[\"Embarked\"] = newEmbarked"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 133,
+   "id": "97b6461c-f64b-47a8-991c-a51e161a2111",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "## train test 분리 --()\n",
+    "# 8:2\n",
+    "# tr_idx =\n",
+    "# te_idx =\n",
+    "new_index = np.random.choice(X.index,X.index.size,replace=False)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 143,
+   "id": "9096f0cf-1202-4a31-91f6-6c2ea3557c3b",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "tr_idx = new_index[:int(new_index.size*0.8)]\n",
+    "te_idx = new_index[int(new_index.size*0.8):]\n",
+    "X_train = X.loc[tr_idx,:]\n",
+    "X_test = X.loc[te_idx,:]\n",
+    "y_train = y[tr_idx]\n",
+    "y_test = y[te_idx]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 208,
+   "id": "fcf2fb30-4385-4953-8685-e3e765cd63e9",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "logreg = LogisticRegression()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 209,
+   "id": "759b3a81-0cfa-45e7-bfd5-676a4ed35d51",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0.7953151780613217"
+      ]
+     },
+     "execution_count": 209,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "cross_val_score(logreg,X,y,cv=5).mean()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 144,
+   "id": "e1c08310-f644-4822-b1fb-4cc9f6c94897",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0.797752808988764"
+      ]
+     },
+     "execution_count": 144,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "##Accuracy로 평가\n",
+    "## 예측값 과 실제값의 차이 두값이 같냐 ?1 다르냐 ?0\n",
+    "# 예측값 = yjh.predict(X) \n",
+    "# 실제값 = y\n",
+    "# sum(예측값 == 실제값)/len(예측값)\n",
+    "\n",
+    "y_hat = yjh.predict(X_test)\n",
+    "sum(y_hat==y_test)/len(y_test)"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.9.7"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}

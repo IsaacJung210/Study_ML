@@ -1,0 +1,7 @@
+심선조강사님/UCI filter=lfs diff=lfs merge=lfs -text
+HAR filter=lfs diff=lfs merge=lfs -text
+Dataset.zip filter=lfs diff=lfs merge=lfs -text
+심선조강사님/정승쌤 filter=lfs diff=lfs merge=lfs -text
+정리/data/santander_train.csv filter=lfs diff=lfs merge=lfs -text
+정리/human_activity/train/X_train.txt filter=lfs diff=lfs merge=lfs -text
+이강욱강사님/006975-master.zip filter=lfs diff=lfs merge=lfs -text

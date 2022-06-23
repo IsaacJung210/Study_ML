@@ -1,0 +1,267 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 35,
+   "id": "88bf0d1f-4610-473f-b838-1ea4882d5128",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import warnings\n",
+    "warnings.filterwarnings(action='ignore')\n",
+    "\n",
+    "import numpy as np\n",
+    "import pandas as pd\n",
+    "\n",
+    "import matplotlib.pyplot as plt"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "8ad41775-6115-4fab-b7d1-274b4e76fc67",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df = pd.read_csv(\"data/titanic.csv\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 110,
+   "id": "711ba017-a589-490e-aa04-23741eaabffb",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "## 데이터 개요\n",
+    "df.head()\n",
+    "## 데이터 변수 확인\n",
+    "df.columns # 변수 이름들 확인\n",
+    "df.columns.size # 몇개의 변수\n",
+    "df.shape # 행의 개수, 열의 개수\n",
+    "df.dtypes # 변수의 데이터 타입 (수치형으로 변환을 위해)\n",
+    "## 특징(변수)는 반드시 na가 있으면 안되므로 na 확인\n",
+    "df.isna().sum()\n",
+    "## 필요한 컬럼만 셀렉트\n",
+    "selected_cols = [\"Pclass\",\"Name\",\"Sex\",\"Age\",\"SibSp\",\"Parch\",\"Ticket\",\"Fare\",\"Cabin\",\"Embarked\",\"Survived\"]\n",
+    "data = df[selected_cols]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 111,
+   "id": "67193c9c-551b-4fa1-b3ee-ef52d8d8eb8e",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "## 분석데이터 개요\n",
+    "data.head()\n",
+    "## 데이터 변수 확인\n",
+    "data.columns # 변수 이름들 확인\n",
+    "data.columns.size # 몇개의 변수\n",
+    "data.shape # 행의 개수, 열의 개수\n",
+    "data.dtypes # 변수의 데이터 타입 (수치형으로 변환을 위해)\n",
+    "## 특징(변수)는 반드시 na가 있으면 안되므로 na 확인\n",
+    "data.isna().sum()\n",
+    "#data.info()\n",
+    "## Na 정리\n",
+    "#1. drop데이터 선별 (컬럼)\n",
+    "# Cabin \n",
+    "#2. drop데이터 선별 (로우)\n",
+    "#Embarked\n",
+    "#data.drop(data.Embarked.isna(),axis=0)\n",
+    "data = data.loc[~data.Embarked.isna(),:]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 112,
+   "id": "b253daeb-6318-47a3-920f-7dade8a38d5c",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "## Cabin imputation\n",
+    "# 수치형 --> 세심한 주의(평균 사용시 주의 요망)\n",
+    "# 범주형데이터 --> real Na? 범주외의 대체값\n",
+    "## Cabin EDA \n",
+    "data.Cabin.str[:1].value_counts()\n",
+    "data.Cabin.fillna(\"N\",inplace=True)\n",
+    "data.isna().sum()\n",
+    "data.Cabin.str[:1].value_counts()\n",
+    "newCabin = data.Cabin.str[:1]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 113,
+   "id": "8158ccca-ca18-4bbc-89eb-bd95bcccba59",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "## Age imputaion\n",
+    "## Age EDA\n",
+    "data.Age.describe()\n",
+    "data.loc[data.Age <= 18,:] ##\n",
+    "data.loc[data.Age.isna(),[\"Pclass\",\"Fare\"]] ## Age값이 NUll인 사람의 선실과 요금\n",
+    "data.groupby([\"Pclass\",\"Sex\"])[\"Fare\"].mean()\n",
+    "\n",
+    "## Age 예측을 위한 회귀모델 생성\n",
+    "from sklearn.ensemble import RandomForestRegressor\n",
+    "from sklearn.preprocessing import LabelEncoder, OneHotEncoder\n",
+    "df_age = data.loc[~data.Age.isna(),[\"Pclass\",\"Sex\",\"Fare\",\"Embarked\",\"Age\"]]\n",
+    "pred_age = data.loc[data.Age.isna(),[\"Pclass\",\"Sex\",\"Fare\",\"Embarked\"]]\n",
+    "le_sex = LabelEncoder()\n",
+    "le_sex.fit(df_age.Sex)\n",
+    "newSex = le_sex.transform(df_age.Sex)\n",
+    "le_embarked = LabelEncoder()\n",
+    "le_embarked.fit(df_age.Embarked)\n",
+    "newEmbarked = le_embarked.transform(df_age.Embarked)\n",
+    "df_age.drop([\"Sex\",\"Embarked\"],axis=1,inplace=True)\n",
+    "newCols = np.c_[newSex,newEmbarked]\n",
+    "df_age = pd.concat([pd.DataFrame(newCols,index=df_age.index),df_age],axis=1)\n",
+    "age_model = RandomForestRegressor()\n",
+    "age_model.fit(df_age.iloc[:,:-1],df_age.iloc[:,-1])\n",
+    "\n",
+    "## Null 예측실행\n",
+    "newSex = le_sex.transform(pred_age.Sex)\n",
+    "newEmbarked = le_embarked.transform(pred_age.Embarked)\n",
+    "pred_age.drop([\"Sex\",\"Embarked\"],axis=1,inplace=True)\n",
+    "newCols = np.c_[newSex,newEmbarked]\n",
+    "pred_age = pd.concat([pd.DataFrame(newCols,index=pred_age.index),pred_age],axis=1)\n",
+    "newAge = age_model.predict(pred_age)\n",
+    "pred_age[\"Age\"] = newAge\n",
+    "\n",
+    "## \n",
+    "newAge = pd.merge(df_age,pred_age,how=\"outer\")[[\"Age\"]]\n",
+    "newAge.reset_index(inplace=True)\n",
+    "newAge.drop(\"index\",axis=1,inplace=True)\n",
+    "\n",
+    "## data에 newAge컬럼 추가\n",
+    "data.reset_index(inplace=True)\n",
+    "data.drop([\"Age\",\"index\"],axis=1,inplace=True)\n",
+    "data[\"Age\"] = newAge\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 124,
+   "id": "a4161cc4-855b-42e0-b69f-b13d285315ec",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0                                Braund, Mr. Owen Harris\n",
+       "1      Cumings, Mrs. John Bradley (Florence Briggs Th...\n",
+       "2                                 Heikkinen, Miss. Laina\n",
+       "3           Futrelle, Mrs. Jacques Heath (Lily May Peel)\n",
+       "4                               Allen, Mr. William Henry\n",
+       "                             ...                        \n",
+       "884                                Montvila, Rev. Juozas\n",
+       "885                         Graham, Miss. Margaret Edith\n",
+       "886             Johnston, Miss. Catherine Helen \"Carrie\"\n",
+       "887                                Behr, Mr. Karl Howell\n",
+       "888                                  Dooley, Mr. Patrick\n",
+       "Name: Name, Length: 889, dtype: object"
+      ]
+     },
+     "execution_count": 124,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "## 파생변수 생성 (Name) 결혼유무판단\n",
+    "## data.Name에서 Mrs. 가 존재하면 기혼\n",
+    "## data.Name에서 Mr. 가족(SibSp)이 있으면 기혼 혹은 25세 이상이면 기혼\n",
+    "married = "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 76,
+   "id": "1cc6796b-b7f4-4f28-b295-91b7b840e031",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "889"
+      ]
+     },
+     "execution_count": 76,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "len(data)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 39,
+   "id": "d7e0414f-5728-4c02-a7d7-90a9eb90f44a",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "(array([ 54.,  46., 177., 169., 117.,  70.,  45.,  23.,   9.,   2.]),\n",
+       " array([ 0.42 ,  8.378, 16.336, 24.294, 32.252, 40.21 , 48.168, 56.126,\n",
+       "        64.084, 72.042, 80.   ]),\n",
+       " <BarContainer object of 10 artists>)"
+      ]
+     },
+     "execution_count": 39,
+     "metadata": {},
+     "output_type": "execute_result"
+    },
+    {
+     "data": {
+      "image/png": "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\n",
+      "text/plain": [
+       "<Figure size 432x288 with 1 Axes>"
+      ]
+     },
+     "metadata": {
+      "needs_background": "light"
+     },
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "plt.hist(data.Age)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "cf85c4f1-7737-4a6c-8a9d-ae13da275a42",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.9.7"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}

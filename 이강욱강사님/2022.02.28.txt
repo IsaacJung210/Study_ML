@@ -1,0 +1,253 @@
+python 버전
+conda 에서 (가상환경)독립환경 설정
+-- web 가상환경
+
+conda create -n web python=3.9 
+conda activate web
+python --version
+
+django -- 설치
+conda install django
+
+--web 기본 디렉토리 생성
+mkdir ~/www
+cd ~/www
+
+--장고 프로젝트(웹프로젝트) 생성
+django-admin startproject [웹사이트명 -> blog]
+cd blog
+웹사이트 트리 확인
+tree 
+
+코딩 - vscode 로 접속
+
+--settings.py
+ALLOWED_HOSTS = ['*']    ##ip,mysite.com
+LANGUAGE_CODE = 'ko-kr'
+TIME_ZONE = 'Asia/Seoul'
+
+--runserver
+python manage.py runserver 0.0.0.0:8888
+
+-- Model
+python manage.py makemigrations
+python manage.py migrate
+
+python manage.py createsuperuser
+name:
+e-mail:
+password:
+
+
+conda install mysql
+
+django-admin startproject aaa
+
+-- Model
+python manage.py makemigrations
+python manage.py migrate
+
+--settings.py
+INSTALLED_APPS = [
+	aaa.apps.AAAConfig
+]
+
+(기존 DATABASES 복붙 후 기본꺼는 주석)
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'blog',                  #하이디에 blog가 없으면 없으면 안됨
+        'USER' : 'bigdata',
+        'PASSWORD' : 'Bigdata123!!',
+        'HOST' : '192.168.56.101',
+        'PORT' : '3306'
+    }
+}
+
+-- aaa/views.py
+def index(request):
+    return render(request,"index.html")
+
+-- aaa 폴더에 templates폴더 추가 후 
+index.html 파일 추가
+
+
+-- index.html 
+
+	양식에 맞게 작성 후
+	"intro 성공"을 바디에 작성
+
+-- blog/urls.py에 
+
+from aaa.views import index 모듈 추가
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('intro/',index),
+]
+
+추가
+
+-- 서버 연결 후 mysite.com:8888/intro 되는지 확인
+
+
+--------------------------추가사항-----------------------------
+
+---veiws.py의 텍스트를 index.html 에 표시하는 방법
+
+--veiws.py 에는 
+	from django.shortcuts import render
+
+	welcome_msg = {'text' : "Intro 성공 view 에서부터 오는 텍스트"}
+	def index(request):
+	    return render(request,"index.html",welcome_msg)
+	# Create your views here.
+
+--index.html
+	<!DOCTYPE html>
+
+	<html lang="en">
+	<head>
+	    <meta charset="UTF-8">
+	    <title>Document</title>
+	</head>
+	<body>
+	    intro 성공<br>
+	    {{ text }}
+	</body>
+	</html>
+
+
+	----------------------점심시간-------------------------
+
+--admin.py와 models.py  정리
+
+#####intro/admin.py에
+from django.contrib import admin
+from intro.models import Intro
+
+class IntroAdmin(admin.ModelAdmin):
+    list_display = ('names','hobby')
+
+admin.site.register(Intro,IntroAdmin)    <----이건 webapp/urls에 있는거를 사
+
+
+####intro/models.py에서
+
+from django.db import models
+
+class Intro(models.Model):
+    names = models.CharField(max_length=200)
+    hobby = models.CharField(max_length=200)
+
+    def __str__(self):
+        return self.names
+ 
+
+ 하고 다시 python manage.py makemigrations
+python manage.py migrate 실행 후
+mysql를 실행해서 blog 테이블에서  ' intro_intro ' 추가된거 확인
+
+
+그 전에 데이터베이스는 연결해야 들어가진다.
+
+안했으면 
+--settings.py
+	DATABASES = {
+	    'default': {
+	        'ENGINE': 'django.db.backends.mysql',
+	        'NAME': 'blog',                  #하이디에 blog가 없으면 없으면 안됨
+	        'USER' : 'bigdata',
+	        'PASSWORD' : 'Bigdata123!!',
+	        'HOST' : '192.168.56.101',
+	        'PORT' : '3306'
+	    }
+	}
+
+--------------------------------------------------계속
+
+desc intro_intro;해서 models.py에서 작성한 것이 들어갔는지 확인
+
+superuser 생성하고 서버에 들어가서 확인
+--------------------------------------------------------
+
+
+--- 테이블 생성
+
+하이디에서 CREATE TABLE blog.world as SELECT * FROM SampleDB.world; 실행
+
+그리고 SELECT * FROM blog.world; 해서 테이블이 생성되었는지 확인
+
+ 하고 다시 python manage.py makemigrations
+python manage.py migrate 실행 후
+
+mysql테이블 확인
+이때 테이블에 world를 intro_world로 해줘야한다.
+그래서 하이디에서 ALTER TABLE blog.world RENAME TO intro_world; 실행
+
+그리고 다시 확인하면 intro_world;라고 뜬다.
+
+
+
+---values 넣고 사이트에서 확인하기
+하이디에서
+INSERT INTO intro_intro(NAMES,hobby) VALUES('이순재','서든');
+INSERT INTO intro_intro(NAMES,hobby) values('지병규','GTA');
+INSERT INTO intro_intro(NAMES,hobby) VALUES('황성욱','롤');
+INSERT INTO intro_intro(NAMES,hobby) values('정인모','서든');
+를 다 넣어준다.
+
+다시 vscode에서 서버를 연결 후 게시판에 들어갔는지 확인
+
+-----------게시판에 있는걸 host:0000/intro에  뜨게 하는 방법
+
+intro.html에는
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div>
+      <div>Intro 성공</div>
+      {% for dt in content %}
+        <li>이름:{{ dt.names }}</li>
+        <li>취미:{{ dt.hobby }}</li>
+      {% endfor %}
+    </div>
+  </body>
+</html>
+
+
+views.py에는 
+
+from django.shortcuts import render
+from intro.models import *
+
+data = Intro.objects.all()
+
+def intro(request):
+    msg = {"content":data}
+    return render(request,"intro.html",msg)
+
+넣으면 끝
+
+
+서버창에 host:0000/intro을 들어가서 되는지 확인
+
+------------------------------------------------
+이미지 넣는 방법
+settings에
+STATICFILES_DIRS = [os.path.join(BASE_DIR,'static')] 추가
+
+intro.html에 
+
+    {% load static %}와
+
+        <img src="{% static 'img/이미지파일' %}" />
+
+        넣으면 됨
+
+

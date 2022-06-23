@@ -1,0 +1,236 @@
+2022.02.25 수업내용 정리
+
+
+
+####### source 설치 작업
+  #source.zip을 받아서 파일질라에서 가상으로 옮긴다.
+
+  #유저서버에 접속해서 코드를 친다.
+	sudo yum install unzip
+	unzip source.zip
+	mkdir web_work
+	cp -r source ./web_work
+	cd web_work
+
+
+
+####### 장고 설치 작업
+  #아나콘다 설치
+	conda create -n webapp
+	cd ../
+	cd anaconda3/
+	cd envs
+	cd webapp
+	cd
+	conda activate webapp
+	conda deactivate
+	source activate webapp
+	conda install django
+	cd web_work
+	django-admin startproject  mysite
+	cd mysite
+
+
+
+####### 폴더 구조 구경잼~
+	settings,urls가 중요한 파일이다
+
+
+
+####### 서버설정 변경
+	settings.py에서 ALLOWED_HOSTS에 '192.168.56.101' 삽입
+
+root를 켜서
+cd /etc
+vi hosts 에 
+-------------------------
+127.0.0.1 localhost
+192.168.56.101 mysite.com
+--------------------------
+:qw
+
+
+
+####### 폴더구조 보기 위해서 tree 설치
+yum install tree
+
+
+
+####### 다시 유저계정에서
+ cd
+ cd web_work/
+ cd mysite
+ tree 
+ python manage.py runserver 0.0.0.0:8000
+
+ settings.py에서
+ ALLOWED_HOSTS = ['192.168.56.101','mysite.com'] 로 변경 후
+
+ python manage.py runserver 0.0.0.0:8000
+ 사이트에서 서버되는거 확인하고
+ 다시 서버 끊고(ctrl+c)
+
+-----------------------------정승쌤이 가고 난 후 ------------------------------
+
+####### polls 작업 생성 
+     (TMI : poll로 만들었다가 source/Redbook/ch3에 polls랑 이름이 달라서 
+            삭제하고 다시 만들었음)
+ ./manage.py startapp polls
+
+
+
+####### admin 되는지 확인 
+ ./manage.py runserver 0.0.0.0:8000 하고
+ 사이트에서 mysite.com:8000/admin 을 들어간다. (장고교재 P.134쪽 참고)
+
+
+
+####### 각 .py의 모듈 설명~~~
+			source의 폴더에서 ch3/mysite 그리고 ch3/polls을 구경잼~~~
+
+
+
+
+####### vscode에서 mysite폴더를 source/Redbook/ch3 파일들 복붙작업
+
+- mysite폴더에 settings와 urls 복붙
+- polls폴더는 전부다 복붙 (urls파일도 만들어서 복붙)
+- polls에 templates 폴더 추가해서 밑에 파일을 복붙
+- mysite폴더에 settings 에 import os 모듈 추가 및 INSTALLED_APPS 복붙작업
+
+
+
+############다시 터미널에
+
+./manage.py makemigrations polls
+./manage.py runserver 0.0.0.0:8000
+사이트에서 host:8000/polls 확인하는데 안되서
+
+polls/views.py 함수에서 polls/ 다 삭제
+
+
+
+########admin계정 생성 로그인
+./manage.py migrate
+./manage.py createsuperuser
+host:8000/admin 에서 로그인
+host:8000/polls 확인
+
+
+
+########사이트가 연동되는지 확인작업
+
+ polls/templates/index에서
+{% else %} 밑에
+    <div>
+        아무것도 없어요.
+    </div>
+넣어서 사이트가 연동 확인
+
+
+
+#########게시물 작성 시 연동 확인 작업
+Questions에 	당신이 좋아하는 취미는 무엇입니까? 를 등록
+
+choices에 게시물 음악, 미술, 잠자기 총 3개 게시물 등록
+
+http://mysite.com:8000/polls/ 다시 들어가서
+
+'당신이 좋아하는 취미는 무엇입니까?' 링크 클릭
+
+음악 체크하고 vote 클릭
+
+그리고 서버를 끊고 다시 연결하고
+
+http://mysite.com:8000/polls/ 다시 들어가서
+
+아무거나 투표하고 데이터 남아있는거 확인
+
+
+
+######################intro 만들기
+서버 끊고 
+
+터미널에 ./manage.py startapp intro
+
+
+- mysite/settings에 밑에 항목 찾아서 추가 
+
+			INSTALLED_APPS = [
+					...
+		  		'intro.apps.IntroConfig',		
+			]
+
+- mysite/urls에 밑에 항목 찾아서 추가 
+
+		urlpatterns = [
+		     ...
+		    path('intro/', include('intro.urls')),
+		]
+
+
+
+######################점심시간###############################
+
+polls폴더에 있는 urls.py를 복사해서 intro 폴더에 붙여넣기
+
+그리고 파일 안에 polls를 intro로 변경
+
+
+intro/views 에 넣기
+
+		from django.shortcuts import render
+
+		def index(request):
+		    context = {'my_name': myname}
+		    return render(request, 'intro_index.html',context)
+
+intro폴더에 templates 폴더 추가 후 intro_index.html 파일 추가
+
+안에는 밑에 코딩넣기
+
+		<!DOCTYPE html>
+		<html lang="ko">
+		<head>
+		    <meta charset="UTF-8">
+		    <title>Document</title>
+		</head>
+		<body>
+		    <h1>My Intro</h1>
+		    <h2>나의 이름은 {{ my_name }} 입니다.</h2>
+		</body>
+		</html>
+
+http://mysite.com:8000/intro 들어가서 내용이 표출되는지 확인
+
+
+#########for문 돌리는 방법 설명
+intro_index.html에 이거 넣고
+
+		<!DOCTYPE html>
+		<html lang="ko">
+		<head>
+		    <meta charset="UTF-8">
+		    <title>Document</title>
+		</head>
+		<body>
+		    <h1>My Intro</h1>
+		    {% for name in my_name %}
+		    <h2>나의 이름은 {{ name }} 입니다.</h2>
+		    {% endfor %}
+		</body>
+		</html>
+
+intro/views.py에 이거 넣고 확인
+		from django.shortcuts import render
+
+		myname = ["정지훈"] *10
+
+		def index(request):
+		    context = {'my_name': myname}
+		    return render(request, 'intro_index.html',context)
+
+
+
+
+###############이미지를 넣는 방법
